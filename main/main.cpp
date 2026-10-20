@@ -25,8 +25,82 @@ public:
         }
         data = grid;
     }
+
+    static Matrix loadFromFile(const std::string& filename) {
+        std::ifstream file(filename);
+        if (!file.is_open()) {
+            throw std::runtime_error("Не удалось открыть файл: " + filename);
+        }
+
+        size_t n;
+        if (!(file >> n) || n == 0) {
+            throw std::runtime_error("Некорректный размер матрицы в файле.");
+        }
+
+        Matrix mat(n);
+        for (size_t i = 0; i < n; ++i) {
+            for (size_t j = 0; j < n; ++j) {
+                if (!(file >> mat.data[i][j])) {
+                    throw std::runtime_error("Ошибка считывания элементов матрицы.");
+                }
+            }
+        }
+
+        return mat;
+    }
+
+    /**
+     * @brief Вычисление определителя методом Гаусса.
+     */
+    double determinant() const {
+        std::vector<std::vector<double>> a = data;
+        double det = 1.0;
+
+        for (size_t i = 0; i < size; ++i) {
+            size_t pivot = i;
+            for (size_t j = i + 1; j < size; ++j) {
+                if (std::abs(a[j][i]) > std::abs(a[pivot][i])) {
+                    pivot = j;
+                }
+            }
+
+            if (std::abs(a[pivot][i]) < EPS) {
+                return 0.0;
+            }
+
+            if (i != pivot) {
+                std::swap(a[i], a[pivot]);
+                det = -det;
+            }
+
+            det *= a[i][i];
+
+            for (size_t j = i + 1; j < size; ++j) {
+                double factor = a[j][i] / a[i][i];
+                for (size_t k = i + 1; k < size; ++k) {
+                    a[j][k] -= factor * a[i][k];
+                }
+            }
+        }
+
+        return det;
+    }
 };
 
-int main() {
+int main(int argc, char* argv[]) {
+    std::string filename = "input.txt";
+    if (argc > 1) {
+        filename = argv[1];
+    }
+
+    try {
+        Matrix matrix = Matrix::loadFromFile(filename);
+        double det = matrix.determinant();
+        std::cout << "Определитель матрицы: " << det << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "Ошибка: " << e.what() << std::endl;
+        return 1;
+    }
+
     return 0;
 }
